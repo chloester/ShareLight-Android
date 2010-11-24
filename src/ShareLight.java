@@ -5,6 +5,8 @@
  * @collab: Chris Harrison, Varuni Saxena
  * @notes: Mobile & Pervasive Computing Class Project
  * @last updated: November 6, 2010
+ * @ When migrating over to Processing, get rid of:
+ * public class Sharelight; PApplet parent; path = "", replace "this, " with ""; processing.core.*; replace "parent." with ""
  */
 
 import java.util.ArrayList;
@@ -19,7 +21,7 @@ public class ShareLight extends PApplet {
 
 	// setting up images -------------------------------------------------------
 	String path = "img/";
-	String bgPath = path + "bg_wood.jpg"; // metal, paper, pattern, wood, mesh
+	String bgPath = path + "bg_wood_800.jpg"; // metal, paper, pattern, wood, mesh
 	PImage bg;
 	String shadowPath = path + "shadow.png"; // to give nice look to background
 	PImage shadow;
@@ -27,25 +29,29 @@ public class ShareLight extends PApplet {
 	PImage dropSpace;
 
 	// declare files & icon locations ------------------------------------------
-	File emptyFile = new File(this, "", path + "dropspace.png");
-	File file1 = new File(this, "Alpha.pdf", path + "pdf.png");
-	File file2 = new File(this, "Presentation.ppt", path + "ppt.png");
-	File file3 = new File(this, "Image.jpg", path + "fw.png");
-	File file4 = new File(this, "Gamma.xls", path + "excel.png");
-	File file5 = new File(this, "Beta.docx", path + "word.png");
-	File file6 = new File(this, "List.txt", path + "txt.png");
-	File[] fileList = { file1, file2, file3, file4, file5, file6 };
+	// create server instance for easier communication
+	Server server = new Server(this);
+	File emptyFile = new File(this, "", "dropspace");
+//	File file1 = new File(this, "Alpha.pdf", path + "pdf.png");
+//	File file2 = new File(this, "Presentation.ppt", path + "ppt.png");
+//	File file3 = new File(this, "Image.jpg", path + "fw.png");
+//	File file4 = new File(this, "Gamma.xls", path + "excel.png");
+//	File file5 = new File(this, "Beta.docx", path + "word.png");
+//	File file6 = new File(this, "List.txt", path + "txt.png");
+//	File[] fileList = { file1, file2, file3, file4, file5, file6 };
+	static File[] fileList = new File[6];
 	File draggedFile;
 	// List to store shared items (dropspace)
 	int numSharedFiles = 3;
 	ArrayList sharedFiles = new ArrayList(numSharedFiles);
 
 	// compute screen dimensions -----------------------------------------------
-	int screenWidth = 480; // 480 x 854 (Motorola Droid)
-	int filesPerRow = 3; // how many icons to display per row (fpr)
-	int iconSize = 128; // 128px for 3fpr, 200px for 2fpr
+	static int screenWidth = 480; // 480 x 854 (Motorola Droid); 480x800 (myTouch 4G)
+	int screenHeight = 800;
+	static int filesPerRow = 3; // how many icons to display per row (fpr)
+	static int iconSize = 128; // 128px for 3fpr, 200px for 2fpr
 	// margin between icons
-	int margin = (screenWidth - (iconSize * filesPerRow)) / (filesPerRow + 1);
+	static int margin = (screenWidth - (iconSize * filesPerRow)) / (filesPerRow + 1);
 	// used for dragging
 	int mouseDiffX;
 	int mouseDiffY;
@@ -72,13 +78,15 @@ public class ShareLight extends PApplet {
 
 	public void setup() {
 		frameRate(30);
-		size(480, 854);
+		size(screenWidth, screenHeight);
 		bg = loadImage(bgPath);
 		shadow = loadImage(shadowPath);
 		println(bgPath);
 
 		dropSpace = loadImage(dropSpacePath);
 
+		// get files from the server
+		server.getAllFiles();
 		// load fileList into grid
 		resetFileDisplay();
 
@@ -118,10 +126,11 @@ public class ShareLight extends PApplet {
 
 		// load dropSpaces into sharedFiles
 		for (int j = 0; j < numSharedFiles; j++) {
-			File newFile = new File(this, emptyFile.name, emptyFile.path);
+			File newFile = new File(this, emptyFile.name, emptyFile.type);
 			newFile.initDisplay(-500, -500, iconSize, margin);
 			sharedFiles.add(newFile);
 		}
+		
 	}
 
 	void display() {
@@ -146,7 +155,7 @@ public class ShareLight extends PApplet {
 		for (int i = 0; i < fileList.length; i++) {
 			if (fileList[i].isShared && fileList[i].isProjected >= 0) {
 				File newFile = new File(this, fileList[i].name,
-						fileList[i].path);
+						fileList[i].type);
 				newFile.isProjected = fileList[i].isProjected;
 				// #todo change to prevent repeat inits (increase speed)
 				// might need to compare current sharedFiles with last updated
@@ -195,7 +204,7 @@ public class ShareLight extends PApplet {
 				mouseDiffX = mouseX - fileList[i].x;
 				mouseDiffY = mouseY - fileList[i].y;
 				// initialize dragged icon
-				draggedFile = new File(this, fileList[i].name, fileList[i].path);
+				draggedFile = new File(this, fileList[i].name, fileList[i].type);
 				draggedFile.initDisplay(mouseX - mouseDiffX, mouseY
 						- mouseDiffY, iconSize, margin);
 			} else {
@@ -328,7 +337,7 @@ public class ShareLight extends PApplet {
 							fileList[i].isProjected = -1;
 							fileList[i].isShared = false;
 							File dropSpace = new File(this, emptyFile.name,
-									emptyFile.path);
+									emptyFile.type);
 							dropSpace.initDisplay(-500, -500, iconSize, margin);
 							sharedFiles.set(prevLoc, dropSpace);
 						}

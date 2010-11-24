@@ -1,14 +1,13 @@
 import processing.core.*;
 
 public class Owner {
-	PApplet parent;
 	int id;
 	String name;
 	String avatar;
 	int mode;
 	
 	Owner() {
-		
+		// creates empty owner without any info
 	}
 	
 	Owner(int i, String n, String a, int m) {

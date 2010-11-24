@@ -6,6 +6,7 @@ public class File {
 	String prePath = "img/";
 	String path;
 	String sharedImgPath = prePath + "shared.png";
+	String type;
 	Owner owner;
 	boolean isShared;
 	boolean isPressed;
@@ -26,13 +27,19 @@ public class File {
 	 * to add later: int id; int owner;
 	 */
 
-	File(PApplet p, String fileName, String filePath) {
+	File(PApplet p, String fileName, String fileType) {
 		parent = p;
 		name = fileName;
-		path = filePath;
+		type = fileType;
+		path = getPath(type);
 		isShared = false;
 		isPressed = false;
 		isProjected = -1;
+		owner = new Owner();
+	}
+
+	String getPath(String fileType) {
+		return prePath+fileType+".png";
 	}
 
 	void initDisplay(int x, int y, int s, int m) {
@@ -44,6 +51,7 @@ public class File {
 		margin = m;
 
 		// load image
+		// lines cannot be separated
 		icon = parent.loadImage(path);
 		parent.image(icon, x, y, s, s);
 
@@ -85,19 +93,20 @@ public class File {
 			parent.fill(255);
 			parent.noStroke();
 			// give text a buffer
-			parent.text(name, x + 3, y + iconSize + 3, iconSize, margin); // +3
+			parent.text(name+"."+type, x + 3, y + iconSize + 3, iconSize, margin); // +3
 		}
 
 		// if file is shared, add icon
 		if (isShared) {
-			parent.image(sharedIcon, x + iconSize - sharedIconSize, y
+			parent
+					.image(sharedIcon, x + iconSize - sharedIconSize, y
 							+ iconSize - sharedIconSize, sharedIconSize,
 							sharedIconSize);
 		} else {
 			parent.image(sharedIcon, sharedInitLoc, sharedInitLoc);
 		}
 	}
-	
+
 	void setOwner(int i, String n, String a, int m) {
 		owner.id = i;
 		owner.name = n;

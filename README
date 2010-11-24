@@ -1,0 +1,7 @@
+ShareLight is a class project collaboration between Chloe Fan, Chris Harrison, and Varuni Saxena for Mobile & Pervasive Computing at Carnegie Mellon University, F10-15821. We are creating a rough application to showcase file transfer using mobile phones and pico projectors.
+
+This application is created in Processing (Java) using Eclipse. The code here can be run as a Java Application, but in order to run it on an Android phone, several changes need to be made after copying and pasting the code into the Processing IDE. For information on connecting Processing to Android, see here: http://wiki.processing.org/w/Android
+
+The ShareLight-Android application is the application that will run on the phone and send commands to the server whenever a file is changed. There is a Desktop version that will pull changes from the server and project it from the pico projector. The whole server is a way to communicate between the Android and the projector, since our test phones do not have pico projectors built into them.
+
+For more information, please email Chloe at chloefan@cmu.edu.
