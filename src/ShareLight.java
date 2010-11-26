@@ -6,7 +6,7 @@
  * @notes: Mobile & Pervasive Computing Class Project
  * @last updated: November 6, 2010
  * @ When migrating over to Processing, get rid of:
- * public class Sharelight; PApplet parent; path = "", replace "this, " with ""; processing.core.*; replace "parent." with ""
+ * public class Sharelight; PApplet parent; path = "", replace "this, " with ""; processing.core.*; replace "parent." with ""; remove public static main; 
  */
 
 import java.util.ArrayList;
@@ -32,14 +32,7 @@ public class ShareLight extends PApplet {
 	// create server instance for easier communication
 	Server server = new Server(this);
 	File emptyFile = new File(this, "", "dropspace");
-//	File file1 = new File(this, "Alpha.pdf", path + "pdf.png");
-//	File file2 = new File(this, "Presentation.ppt", path + "ppt.png");
-//	File file3 = new File(this, "Image.jpg", path + "fw.png");
-//	File file4 = new File(this, "Gamma.xls", path + "excel.png");
-//	File file5 = new File(this, "Beta.docx", path + "word.png");
-//	File file6 = new File(this, "List.txt", path + "txt.png");
-//	File[] fileList = { file1, file2, file3, file4, file5, file6 };
-	static File[] fileList = new File[6];
+	static ArrayList fileList = new ArrayList(); // arbitrary fileList size
 	File draggedFile;
 	// List to store shared items (dropspace)
 	int numSharedFiles = 3;
@@ -95,7 +88,7 @@ public class ShareLight extends PApplet {
 		// initial pulldown height will be at the top
 		pdY = pdYReset;
 
-		println("Displaying " + fileList.length + " files"); // debug
+		println("Displaying " + fileList.size() + " files"); // debug
 	}
 
 	/*--------------------------------------------------------------------------
@@ -115,13 +108,13 @@ public class ShareLight extends PApplet {
 
 	void resetFileDisplay() {
 		// load fileList into grid, default positions
-		for (int i = 0; i < fileList.length; i++) {
+		for (int i = 0; i < fileList.size(); i++) {
 			int currentX = (i % filesPerRow) * (iconSize + margin) + margin;
 			int currentY = (i / filesPerRow) * (iconSize + margin) + margin
 					+ buffer;
-			fileList[i].x = currentX;
-			fileList[i].y = currentY;
-			fileList[i].initDisplay(currentX, currentY, iconSize, margin);
+			((File) fileList.get(i)).x = currentX;
+			((File) fileList.get(i)).y = currentY;
+			((File) fileList.get(i)).initDisplay(currentX, currentY, iconSize, margin);
 		}
 
 		// load dropSpaces into sharedFiles
@@ -135,12 +128,13 @@ public class ShareLight extends PApplet {
 
 	void display() {
 		// draw base icons
-		for (int i = 0; i < fileList.length; i++) {
+		for (int i = 0; i < fileList.size(); i++) {
+			File current = ((File) fileList.get(i));
 			int currentY = (i / filesPerRow) * (iconSize + margin) + margin
 					+ buffer;
 			// move along with pulldown
-			fileList[i].y = currentY + (pdY - pdYReset);
-			fileList[i].display(fileList[i].x, fileList[i].y);
+			current.y = currentY + (pdY - pdYReset);
+			current.display(current.x, current.y);
 		}
 
 		// draw pulldown menu on top of icons
@@ -152,15 +146,16 @@ public class ShareLight extends PApplet {
 		}
 
 		// set sharedFiles from fileList
-		for (int i = 0; i < fileList.length; i++) {
-			if (fileList[i].isShared && fileList[i].isProjected >= 0) {
-				File newFile = new File(this, fileList[i].name,
-						fileList[i].type);
-				newFile.isProjected = fileList[i].isProjected;
+		for (int i = 0; i < fileList.size(); i++) {
+			File current = ((File) fileList.get(i));
+			if (current.isShared && current.isProjected >= 0) {
+				File newFile = new File(this, current.name,
+						current.type);
+				newFile.isProjected = current.isProjected;
 				// #todo change to prevent repeat inits (increase speed)
 				// might need to compare current sharedFiles with last updated
 				newFile.initDisplay(-500, -500, iconSize, margin);
-				sharedFiles.set(fileList[i].isProjected, newFile);
+				sharedFiles.set(current.isProjected, newFile);
 			}
 		}
 		// draw shared icons
@@ -194,21 +189,46 @@ public class ShareLight extends PApplet {
 	// called once
 	public void mousePressed() {
 		// is it pressing on an icon and not on the pulldown?
-		for (int i = 0; i < fileList.length; i++) {
-			if (mouseX > fileList[i].x && mouseX < fileList[i].x + iconSize
-					&& mouseY > fileList[i].y
-					&& mouseY < fileList[i].y + iconSize
+		for (int i = 0; i < fileList.size(); i++) {
+			File current = (File) fileList.get(i);
+			if (mouseX > current.x && mouseX < current.x + iconSize
+					&& mouseY > current.y
+					&& mouseY < current.y + iconSize
 					&& mouseY > pdY + pdHeight) {
 				dragSource = "desktop";
-				fileList[i].isPressed = true;
-				mouseDiffX = mouseX - fileList[i].x;
-				mouseDiffY = mouseY - fileList[i].y;
+				current.isPressed = true;
+				mouseDiffX = mouseX - current.x;
+				mouseDiffY = mouseY - current.y;
 				// initialize dragged icon
-				draggedFile = new File(this, fileList[i].name, fileList[i].type);
+				draggedFile = new File(this, current.name, current.type);
 				draggedFile.initDisplay(mouseX - mouseDiffX, mouseY
 						- mouseDiffY, iconSize, margin);
 			} else {
-				fileList[i].isPressed = false;
+				current.isPressed = false;
+			}
+		}
+
+		// is it pressing on a shared file?
+		for (int i = 0; i < sharedFiles.size(); i++) {
+			File current = (File) sharedFiles.get(i);
+			if (mouseX > current.x && mouseX < current.x + iconSize
+					&& mouseY > current.y 
+					&& mouseY < current.y + iconSize 
+					&& mouseY < pdY + pdHeight) {
+				// don't do anything when pressing on an empty file
+				if (!(current.name).equals("")) {
+					dragSource = "projector";
+					current.isPressed = true;
+					mouseDiffX = mouseX - current.x;
+					mouseDiffY = mouseY - current.y;
+					// initialize dragged icon
+					draggedFile = current;
+					// draggedFile = new File(this, current.name, current.type);
+					// draggedFile.initDisplay(mouseX - mouseDiffX, mouseY - mouseDiffY, iconSize, margin);
+					
+				}
+			} else {
+				current.isPressed = false;
 			}
 		}
 
@@ -219,36 +239,20 @@ public class ShareLight extends PApplet {
 			pdPressed = false;
 		}
 
-		// is it pressing on a projected file?
-		for (int i = 0; i < sharedFiles.size(); i++) {
-			File tempFile = (File) sharedFiles.get(i);
-			if (mouseX > tempFile.x && mouseX < tempFile.x + iconSize
-					&& mouseY > tempFile.y && mouseY < tempFile.y + iconSize) {
-				// don't do anything when pressing on an empty file
-				if (!(tempFile.name).equals("")) {
-					tempFile.isPressed = true;
-					mouseDiffX = mouseX - tempFile.x;
-					mouseDiffY = mouseY - tempFile.y;
-					draggedFile = tempFile;
-					dragSource = "projector";
-				}
-			} else {
-				tempFile.isPressed = false;
-			}
-		}
 	}
 
 	public void mouseDragged() {
 		// dragging icons
-		for (int i = 0; i < fileList.length; i++) {
-			if (fileList[i].isPressed) {
+		for (int i = 0; i < fileList.size(); i++) {
+			File current = ((File) fileList.get(i));
+			if (current.isPressed) {
 				isDragging = true;
 			}
 		}
 		// dragging projected icons
 		for (int i = 0; i < sharedFiles.size(); i++) {
-			File tempFile = (File) sharedFiles.get(i);
-			if (tempFile.isPressed) {
+			File current = (File) sharedFiles.get(i);
+			if (current.isPressed) {
 				isDragging = true;
 			}
 		}
@@ -277,6 +281,7 @@ public class ShareLight extends PApplet {
 		if (isDragging) {
 
 			if (dragSource.equals("desktop")) {
+				// dragging onto projected space
 				if (mouseY < pdY - pdYReset) {
 					for (int i = 0; i < sharedFiles.size(); i++) {
 						// save old file to change its status later
@@ -289,15 +294,16 @@ public class ShareLight extends PApplet {
 								&& mouseY > currentFile.y
 								&& mouseY < currentFile.y + iconSize) {
 							// change old and new file statuses
-							for (int j = 0; j < fileList.length; j++) {
+							for (int j = 0; j < fileList.size(); j++) {
+								File current = ((File) fileList.get(j));
 								// set the new file to shared & projected
 								// set old file to unprojected
-								if (fileList[j].name == newName) {
-									fileList[j].isShared = true;
-									fileList[j].isProjected = i;
-								} else if (fileList[j].name == oldName) {
-									fileList[j].isShared = false;
-									fileList[j].isProjected = -1;
+								if (current.name == newName) {
+									current.isShared = true;
+									current.isProjected = i;
+								} else if (current.name == oldName) {
+									current.isShared = false;
+									current.isProjected = -1;
 								}
 							}
 						}
@@ -305,6 +311,7 @@ public class ShareLight extends PApplet {
 				}
 			}
 			if (dragSource.equals("projector")) {
+				// dragging within projector
 				if (mouseY < pdY - pdYReset) {
 					for (int i = 0; i < sharedFiles.size(); i++) {
 						// save old file to change its status later
@@ -317,25 +324,36 @@ public class ShareLight extends PApplet {
 								&& mouseY > currentFile.y
 								&& mouseY < currentFile.y + iconSize) {
 							// change old and new file statuses
-							for (int j = 0; j < fileList.length; j++) {
+							int newLoc = currentFile.isProjected;
+							int oldLoc = draggedFile.isProjected;
+							for (int j = 0; j < fileList.size(); j++) {
+								File current = ((File) fileList.get(j));
 								// set new file to old file's location
-								int newLoc = currentFile.isProjected;
-								int oldLoc = draggedFile.isProjected;
-								if (fileList[j].name == newName) {
-									fileList[j].isProjected = newLoc;
-								} else if (fileList[j].name == oldName) {
-									fileList[j].isProjected = oldLoc;
+								if (current.name == newName) {
+									current.isProjected = i;
+								} else if (current.name == oldName) {
+									current.isProjected = oldLoc;
 								}
+							}
+							if (oldName.equals("")) {
+								// if swapping with a dropspace
+								File dropSpace = new File(this, emptyFile.name,
+										emptyFile.type);
+								dropSpace.initDisplay(-500, -500, iconSize, margin);
+								sharedFiles.set(oldLoc, dropSpace);
+								// account for index starting at 0
 							}
 						}
 					}
 				} else {
+					// dragging onto desktop
 					String fileName = draggedFile.name;
-					for (int i = 0; i < fileList.length; i++) {
-						if (fileList[i].name == fileName) {
-							int prevLoc = fileList[i].isProjected;
-							fileList[i].isProjected = -1;
-							fileList[i].isShared = false;
+					for (int i = 0; i < fileList.size(); i++) {
+						File current = ((File) fileList.get(i));
+						if (current.name == fileName) {
+							int prevLoc = current.isProjected;
+							current.isProjected = -1;
+							current.isShared = false;
 							File dropSpace = new File(this, emptyFile.name,
 									emptyFile.type);
 							dropSpace.initDisplay(-500, -500, iconSize, margin);

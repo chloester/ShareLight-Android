@@ -2,16 +2,21 @@ import processing.core.*;
 
 public class File {
 	PApplet parent;
-	String name;
 	String prePath = "img/";
-	String path;
 	String sharedImgPath = prePath + "shared.png";
+	// properties: server
+	int id;
+	String name;
 	String type;
+	String date;
 	Owner owner;
+	int isProjected; // projectedLocation
+	int tentative; // previous owner
+	// properties: local
+	String path;
 	boolean isShared;
 	boolean isPressed;
 	boolean hasInited = false; // initDisplay can only be called once
-	int isProjected;
 	// icon variables
 	PImage icon;
 	int x;
@@ -22,10 +27,6 @@ public class File {
 	PImage sharedIcon;
 	int sharedInitLoc = -500;
 	int sharedIconSize;
-
-	/*
-	 * to add later: int id; int owner;
-	 */
 
 	File(PApplet p, String fileName, String fileType) {
 		parent = p;
@@ -39,7 +40,7 @@ public class File {
 	}
 
 	String getPath(String fileType) {
-		return prePath+fileType+".png";
+		return prePath + fileType + ".png";
 	}
 
 	void initDisplay(int x, int y, int s, int m) {
@@ -93,7 +94,8 @@ public class File {
 			parent.fill(255);
 			parent.noStroke();
 			// give text a buffer
-			parent.text(name+"."+type, x + 3, y + iconSize + 3, iconSize, margin); // +3
+			parent.text(name + "." + type, x + 3, y + iconSize + 3, iconSize,
+					margin); // +3
 		}
 
 		// if file is shared, add icon
