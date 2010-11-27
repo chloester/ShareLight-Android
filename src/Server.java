@@ -93,44 +93,60 @@ public class Server {
 
 	}
 
-	void setFile(int... num) {
+	void setFile(int id, String s) {
 		// id, name, type, date, owner, projectedLocation, tentative
-
+		// s should be formatted as e.g. name=Blah&type=pdf
+		String set[] = parent
+				.loadStrings(url + "setFile.py?id=" + id + "&" + s);
+		parent.println("Setting " + s + " for file " + id); // debug
 	}
 
 	// STATUS methods =========================================================
 
-	void getStatus(int id) {
+	int getStatus(int id) {
 		// returns isProjected value given file id
+		String get[] = parent.loadStrings(url + "getStatus.py?id=" + id);
+		parent.println("Status of file " + id + " is " + get[0]); // debug
+		return Integer.parseInt(get[0]);
 	}
 
-	void setStatus(int id, int projectedLocation) {
+	void setStatus(int id, int pLoc) {
 		// sets isProjected value given file id
+		String set[] = parent.loadStrings(url + "setStatus.py?id=" + id
+				+ "&projectedLocation=" + pLoc);
+		parent.println("Status of file " + id + " is set to " + pLoc); // debug
 	}
 
 	// MODE methods ===========================================================
 
 	int getMode(int owner) {
-		return 0;
+		// gets mode for owner id
+		String get[] = parent.loadStrings(url + "getMode.py?id=" + owner);
+		parent.println("Owner " + owner + " mode is " + get[0]); // debug
+		return Integer.parseInt(get[0]);
 	}
 
 	void setMode(int owner, int mode) {
-
+		String set[] = parent.loadStrings(url + "setMode.py?id=" + owner + "&"
+				+ "mode=" + mode);
+		parent.println("Setting owner " + owner + " mode to " + mode); // debug
 	}
 
 	// TENTATIVE methods ======================================================
 
 	void getTentativeFiles() {
-
+		// retrieve all files marked as tentative
+		
 	}
 
 	void getTentativeFiles(int owner) {
-
+		// retrieve tentative files for specific owner
+		
 	}
 
 	// TRANSFER methods =======================================================
 
-	void transferFile(int owner1, int owner2, int projectedLocation) {
+	void transferFile(int owner1, int owner2, int pLoc) {
 
 	}
 }

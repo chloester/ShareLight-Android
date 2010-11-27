@@ -112,9 +112,10 @@ public class ShareLight extends PApplet {
 			int currentX = (i % filesPerRow) * (iconSize + margin) + margin;
 			int currentY = (i / filesPerRow) * (iconSize + margin) + margin
 					+ buffer;
-			((File) fileList.get(i)).x = currentX;
-			((File) fileList.get(i)).y = currentY;
-			((File) fileList.get(i)).initDisplay(currentX, currentY, iconSize, margin);
+			File current = ((File) fileList.get(i));
+			current.x = currentX;
+			current.y = currentY;
+			current.initDisplay(currentX, currentY, iconSize, margin);
 		}
 
 		// load dropSpaces into sharedFiles
