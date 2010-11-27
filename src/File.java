@@ -10,7 +10,7 @@ public class File {
 	String type;
 	String date;
 	Owner owner;
-	int isProjected; // projectedLocation
+	int projectedLocation; // projectedLocation
 	int tentative; // previous owner
 	// properties: local
 	String path;
@@ -35,7 +35,7 @@ public class File {
 		path = getPath(type);
 		isShared = false;
 		isPressed = false;
-		isProjected = -1;
+		projectedLocation = -1;
 		owner = new Owner();
 	}
 

@@ -37,6 +37,8 @@ public class ShareLight extends PApplet {
 	// List to store shared items (dropspace)
 	int numSharedFiles = 3;
 	ArrayList sharedFiles = new ArrayList(numSharedFiles);
+	// init owner for this instance
+	static Owner me = new Owner();
 
 	// compute screen dimensions -----------------------------------------------
 	static int screenWidth = 480; // 480 x 854 (Motorola Droid); 480x800 (myTouch 4G)
@@ -78,6 +80,7 @@ public class ShareLight extends PApplet {
 
 		dropSpace = loadImage(dropSpacePath);
 
+		me.id = 1; // temporarily set to 1 #todo
 		// get files from the server
 		server.getAllFiles();
 		// load fileList into grid
@@ -149,14 +152,14 @@ public class ShareLight extends PApplet {
 		// set sharedFiles from fileList
 		for (int i = 0; i < fileList.size(); i++) {
 			File current = ((File) fileList.get(i));
-			if (current.isShared && current.isProjected >= 0) {
+			if (current.isShared && current.projectedLocation >= 0) {
 				File newFile = new File(this, current.name,
 						current.type);
-				newFile.isProjected = current.isProjected;
+				newFile.projectedLocation = current.projectedLocation;
 				// #todo change to prevent repeat inits (increase speed)
 				// might need to compare current sharedFiles with last updated
 				newFile.initDisplay(-500, -500, iconSize, margin);
-				sharedFiles.set(current.isProjected, newFile);
+				sharedFiles.set(current.projectedLocation, newFile);
 			}
 		}
 		// draw shared icons
@@ -301,10 +304,10 @@ public class ShareLight extends PApplet {
 								// set old file to unprojected
 								if (current.name == newName) {
 									current.isShared = true;
-									current.isProjected = i;
+									current.projectedLocation = i;
 								} else if (current.name == oldName) {
 									current.isShared = false;
-									current.isProjected = -1;
+									current.projectedLocation = -1;
 								}
 							}
 						}
@@ -325,15 +328,15 @@ public class ShareLight extends PApplet {
 								&& mouseY > currentFile.y
 								&& mouseY < currentFile.y + iconSize) {
 							// change old and new file statuses
-							int newLoc = currentFile.isProjected;
-							int oldLoc = draggedFile.isProjected;
+							int newLoc = currentFile.projectedLocation;
+							int oldLoc = draggedFile.projectedLocation;
 							for (int j = 0; j < fileList.size(); j++) {
 								File current = ((File) fileList.get(j));
 								// set new file to old file's location
 								if (current.name == newName) {
-									current.isProjected = i;
+									current.projectedLocation = i;
 								} else if (current.name == oldName) {
-									current.isProjected = oldLoc;
+									current.projectedLocation = oldLoc;
 								}
 							}
 							if (oldName.equals("")) {
@@ -352,8 +355,8 @@ public class ShareLight extends PApplet {
 					for (int i = 0; i < fileList.size(); i++) {
 						File current = ((File) fileList.get(i));
 						if (current.name == fileName) {
-							int prevLoc = current.isProjected;
-							current.isProjected = -1;
+							int prevLoc = current.projectedLocation;
+							current.projectedLocation = -1;
 							current.isShared = false;
 							File dropSpace = new File(this, emptyFile.name,
 									emptyFile.type);
