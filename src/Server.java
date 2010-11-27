@@ -26,38 +26,17 @@ public class Server {
 	void getFile(int id) {
 		String raw[] = parent.loadStrings(url + "getFile.py?id=" + id);
 		// each raw[] is an element of the file
-			updateFileList(raw[0]);
+		updateFileList((File) makeFileList(raw).get(0));
 	}
 
 	void getAllFiles() {
 		// pull file list from server
 		// gets both owner's files and shared files (pLoc > -1)
-		//String raw[] = parent.loadStrings(url + "getAllFiles.py?owner=" + ShareLight.me.id);
-		String raw[] = parent.loadStrings(url + "getAllFiles.py");
-		// only select files that owner owns or is shared
-		ArrayList unmatchedFiles = new ArrayList();  // keep track of all the files that shouldn't match
-		for (int i = 0; i < ShareLight.fileList.size(); i++) {
-			// track all the files we have right now
-			File current = (File) ShareLight.fileList.get(i);
-			unmatchedFiles.add(new Integer(current.id));
-		}
-		
-		for (int i = 0; i < raw.length; i++) {
-			// update the files from the server and note that they are matched now and should still exist
-			Integer matchedFileID = new Integer(updateFileList(raw[i]));
-			int index = unmatchedFiles.indexOf(matchedFileID);
-			if(index != -1)
-				unmatchedFiles.remove(index);
-		}
-		for(int i = 0; i < unmatchedFiles.size(); i++) {
-			// get rid of all the leftover local files that shouldn't be there anymore
-			for(int j = 0; j < ShareLight.fileList.size(); j++) {
-				File current = (File) ShareLight.fileList.get(j);
-				if(new Integer(current.id) == unmatchedFiles.get(i)) {
-					//ShareLight.fileList.remove(j);
-					break;
-				}
-			}
+		String raw[] = parent.loadStrings(url + "getAllFiles.py?owner=" + ShareLight.me.id);
+		//String raw[] = parent.loadStrings(url + "getAllFiles.py");
+		ArrayList rawFiles = makeFileList(raw);
+		for (int i = 0; i<rawFiles.size(); i++) {
+			updateFileList((File) rawFiles.get(i));
 		}
 		
 		// debug
@@ -67,55 +46,50 @@ public class Server {
 		}
 	}
 
+	// helper method for turning string[] of files into ArrayList of files
+	ArrayList makeFileList(String[] s) {
+		ArrayList fileList = new ArrayList();
+		for (int i = 0; i < s.length; i++) {
+			String[] fileData = parent.split(s[i], " , ");
+			File newFile = new File(parent, fileData[name], fileData[type]);
+			newFile.id = Integer.parseInt(fileData[id]);
+			newFile.date = fileData[date];
+			newFile.owner.id = Integer.parseInt(fileData[owner]);
+			newFile.projectedLocation = Integer.parseInt(fileData[pLoc]);
+			newFile.tentative = Integer.parseInt(fileData[tent]);
+			fileList.add(newFile);
+		}
+		return fileList;
+	}
+
 	// helper method for getFile and getAllFiles
-	// takes in String with file info and fileList index
-	// to place file into
-	int updateFileList(String s) {
-		String[] fileData = parent.split(s, " , ");
-		File newFile = new File(parent, fileData[name], fileData[type]);
-		parent.println("Loading " + newFile.name + "." + newFile.type); // debug
-		newFile.id = Integer.parseInt(fileData[id]);
-		newFile.date = fileData[date];
-		newFile.owner.id = Integer.parseInt(fileData[owner]);
-		newFile.projectedLocation = Integer.parseInt(fileData[pLoc]);
-		newFile.tentative = Integer.parseInt(fileData[tent]);
+	void updateFileList(File f) {
 		boolean fileExists = false;
-		int matchedFileID = -1;
 
 		// add/mod file
 		// fileList has content. Check if file already exists
 		for (int n = 0; n < ShareLight.fileList.size(); n++) {
 			File current = (File) ShareLight.fileList.get(n);
-			parent.println("Current.id: " + current.id + " - current.name: "
-					+ current.name + " - fileData.id: " + fileData[id]
-					+ " - fileData.name: " + fileData[name] + " - matches: "
-					+ (current.id == Integer.parseInt(fileData[id])));
-			if (current.id == Integer.parseInt(fileData[id])) {
+			if (current.id == f.id) {
 				// file exists; update file
-				current.name = newFile.name;
-				current.type = newFile.type;
-				current.date = newFile.date;
-				current.owner.id = newFile.owner.id;
-				current.projectedLocation = newFile.projectedLocation;
-				current.tentative = newFile.tentative;
+				current.name = f.name;
+				current.type = f.type;
+				current.date = f.date;
+				current.owner.id = f.owner.id;
+				current.projectedLocation = f.projectedLocation;
+				current.tentative = f.tentative;
 				fileExists = true;
-				matchedFileID = current.id;
 			}
 		}
 		if (!fileExists) {
-			parent.println("My id is: " + ShareLight.me.id);
-			if (newFile.owner.id != ShareLight.me.id
-					&& Integer.parseInt(fileData[pLoc]) == -1)
-				// we can't even see this file; don't add it to our list
-				return -1;
-			ShareLight.fileList.add(newFile);
+			ShareLight.fileList.add(f);
 			// update file properties
 			int index = ShareLight.fileList.size() - 1;
 			((File) ShareLight.fileList.get(index)).initDisplay(0, 0,
 					ShareLight.iconSize, ShareLight.margin);
-			parent.println("Added to fileList[" + index + "]: " + fileData[name]); // debug
+			parent.println("Added to fileList[" + index + "]: "
+					+ f.name); // debug
 		}
-		return matchedFileID;
 	}
 
 	void setFile(int id, String s) {

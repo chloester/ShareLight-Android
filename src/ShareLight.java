@@ -86,6 +86,7 @@ public class ShareLight extends PApplet {
 		dropSpace = loadImage(dropSpacePath);
 
 		me.id = 1; // temporarily set to 1 #todo
+		me.mode = 0; // temporarily set to desktop mode #todo
 		// get files from the server
 		server.getAllFiles();
 		// load fileList into grid
@@ -371,18 +372,27 @@ public class ShareLight extends PApplet {
 				} else {
 					// dragging onto desktop
 					String fileName = draggedFile.name;
+					boolean hasFile = false;
 					for (int i = 0; i < fileList.size(); i++) {
 						File current = ((File) fileList.get(i));
 						if (current.name == fileName) {
+							// change the location to not projected
 							int prevLoc = current.projectedLocation;
 							current.projectedLocation = -1;
 							server.setStatus(current.id,
 									current.projectedLocation);
+							// replace with dropspace
 							File dropSpace = new File(this, emptyFile.name,
 									emptyFile.type);
 							dropSpace.initDisplay(-500, -500, iconSize, margin);
 							sharedFiles.set(prevLoc, dropSpace);
+							hasFile = true;
 						}
+					}
+					// if the dragged file is not on the desktop, i.e. requesting file
+					if (!hasFile) {
+						// set the tentative to current owner
+						server.setFile(draggedFile.id, "tentative="+me.id);
 					}
 				}
 			}
