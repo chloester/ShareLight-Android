@@ -18,6 +18,11 @@ public class ShareLight extends PApplet {
 	/*--------------------------------------------------------------------------
 	 S E T T I N G   U P
 	 --------------------------------------------------------------------------*/
+	
+	// setting up timer --------------------------------------------------------
+	
+	float lastTime = 0;
+	int updateInterval = 5000;
 
 	// setting up images -------------------------------------------------------
 	String path = "img/";
@@ -29,8 +34,6 @@ public class ShareLight extends PApplet {
 	PImage dropSpace;
 
 	// declare files & icon locations ------------------------------------------
-	// create server instance for easier communication
-	Server server = new Server(this);
 	File emptyFile = new File(this, "", "dropspace");
 	static ArrayList fileList = new ArrayList(); // arbitrary fileList size
 	File draggedFile;
@@ -39,6 +42,8 @@ public class ShareLight extends PApplet {
 	ArrayList sharedFiles = new ArrayList(numSharedFiles);
 	// init owner for this instance
 	static Owner me = new Owner();
+	// create server instance for easier communication
+	Server server = new Server(this);
 
 	// compute screen dimensions -----------------------------------------------
 	static int screenWidth = 480; // 480 x 854 (Motorola Droid); 480x800 (myTouch 4G)
@@ -101,6 +106,11 @@ public class ShareLight extends PApplet {
 	public void draw() {
 		background(bg);
 		image(shadow, 0, 0);
+		// update time; get from server every second
+		if (millis() - lastTime > updateInterval) {
+			server.getAllFiles();
+			lastTime = millis();
+		}
 		display();
 		smooth();
 	}
@@ -132,8 +142,11 @@ public class ShareLight extends PApplet {
 
 	void display() {
 		// draw base icons
+		// only draw owner's files
 		for (int i = 0; i < fileList.size(); i++) {
 			File current = ((File) fileList.get(i));
+			if (current.owner.id != me.id)
+				continue;
 			int currentY = (i / filesPerRow) * (iconSize + margin) + margin
 					+ buffer;
 			// move along with pulldown
@@ -150,11 +163,11 @@ public class ShareLight extends PApplet {
 		}
 
 		// set sharedFiles from fileList
+		// draw files that are shared whether user owns them or not
 		for (int i = 0; i < fileList.size(); i++) {
 			File current = ((File) fileList.get(i));
-			if (current.isShared && current.projectedLocation >= 0) {
-				File newFile = new File(this, current.name,
-						current.type);
+			if (current.projectedLocation >= 0) {
+				File newFile = new File(this, current.name, current.type);
 				newFile.projectedLocation = current.projectedLocation;
 				// #todo change to prevent repeat inits (increase speed)
 				// might need to compare current sharedFiles with last updated
@@ -303,11 +316,13 @@ public class ShareLight extends PApplet {
 								// set the new file to shared & projected
 								// set old file to unprojected
 								if (current.name == newName) {
-									current.isShared = true;
 									current.projectedLocation = i;
+									server.setStatus(current.id,
+											current.projectedLocation);
 								} else if (current.name == oldName) {
-									current.isShared = false;
 									current.projectedLocation = -1;
+									server.setStatus(current.id,
+											current.projectedLocation);
 								}
 							}
 						}
@@ -335,8 +350,12 @@ public class ShareLight extends PApplet {
 								// set new file to old file's location
 								if (current.name == newName) {
 									current.projectedLocation = i;
+									server.setStatus(current.id,
+											current.projectedLocation);
 								} else if (current.name == oldName) {
 									current.projectedLocation = oldLoc;
+									server.setStatus(current.id,
+											current.projectedLocation);
 								}
 							}
 							if (oldName.equals("")) {
@@ -357,7 +376,8 @@ public class ShareLight extends PApplet {
 						if (current.name == fileName) {
 							int prevLoc = current.projectedLocation;
 							current.projectedLocation = -1;
-							current.isShared = false;
+							server.setStatus(current.id,
+									current.projectedLocation);
 							File dropSpace = new File(this, emptyFile.name,
 									emptyFile.type);
 							dropSpace.initDisplay(-500, -500, iconSize, margin);

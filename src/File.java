@@ -10,11 +10,10 @@ public class File {
 	String type;
 	String date;
 	Owner owner;
-	int projectedLocation; // projectedLocation
+	int projectedLocation; // -1 = unshared >= 0 is shared
 	int tentative; // previous owner
 	// properties: local
 	String path;
-	boolean isShared;
 	boolean isPressed;
 	boolean hasInited = false; // initDisplay can only be called once
 	// icon variables
@@ -33,7 +32,6 @@ public class File {
 		name = fileName;
 		type = fileType;
 		path = getPath(type);
-		isShared = false;
 		isPressed = false;
 		projectedLocation = -1;
 		owner = new Owner();
@@ -98,12 +96,10 @@ public class File {
 					margin); // +3
 		}
 
-		// if file is shared, add icon
-		if (isShared) {
-			parent
-					.image(sharedIcon, x + iconSize - sharedIconSize, y
-							+ iconSize - sharedIconSize, sharedIconSize,
-							sharedIconSize);
+		// if file is projected, add icon
+		if (projectedLocation > -1) {
+			parent.image(sharedIcon, x + iconSize - sharedIconSize, y + iconSize 
+					- sharedIconSize, sharedIconSize, sharedIconSize);
 		} else {
 			parent.image(sharedIcon, sharedInitLoc, sharedInitLoc);
 		}
