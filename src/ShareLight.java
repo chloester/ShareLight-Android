@@ -6,7 +6,7 @@
  * @notes: Mobile & Pervasive Computing Class Project
  * @last updated: November 6, 2010
  * @ When migrating over to Processing, get rid of:
- * public class Sharelight; PApplet parent; path = "", replace "this, " with ""; processing.core.*; replace "parent." with ""; remove public static main; 
+ * public class Sharelight; PApplet p; path = "", replace "this, " with ""; processing.core.*; replace "p." with ""; remove public static main; 
  */
 
 import java.util.ArrayList;
@@ -18,25 +18,26 @@ public class ShareLight extends PApplet {
 	/*--------------------------------------------------------------------------
 	 S E T T I N G   U P
 	 --------------------------------------------------------------------------*/
-	
+
 	// setting up timer --------------------------------------------------------
-	
 	float lastTime = 0;
-	int updateInterval = 5000;
+	int updateInterval = 1000;
 
 	// setting up images -------------------------------------------------------
 	String path = "img/";
-	String bgPath = path + "bg_wood_800.jpg"; // metal, paper, pattern, wood, mesh
-	PImage bg;
+	String bgPath = path + "bg_wood_800.jpg"; // metal, paper, pattern, wood,
+												// mesh
 	String shadowPath = path + "shadow.png"; // to give nice look to background
-	PImage shadow;
 	String dropSpacePath = path + "dropspace.png";
+	PImage bg;
+	PImage shadow;
 	PImage dropSpace;
 
 	// declare files & icon locations ------------------------------------------
 	File emptyFile = new File(this, "", "dropspace");
-	static ArrayList fileList = new ArrayList(); // arbitrary fileList size
 	File draggedFile;
+	static File tentativeFile;
+	static ArrayList fileList = new ArrayList(); // arbitrary fileList size
 	// List to store shared items (dropspace)
 	int numSharedFiles = 3;
 	ArrayList sharedFiles = new ArrayList(numSharedFiles);
@@ -44,19 +45,23 @@ public class ShareLight extends PApplet {
 	static Owner me = new Owner();
 	// create server instance for easier communication
 	Server server = new Server(this);
+	// create popup instance to display transfer messages
+	Popup popup = new Popup(this, server);
 
 	// compute screen dimensions -----------------------------------------------
-	static int screenWidth = 480; // 480 x 854 (Motorola Droid); 480x800 (myTouch 4G)
+	static int screenWidth = 480; // 480 x 854 (Motorola Droid); 480x800
+									// (myTouch 4G)
 	int screenHeight = 800;
 	static int filesPerRow = 3; // how many icons to display per row (fpr)
 	static int iconSize = 128; // 128px for 3fpr, 200px for 2fpr
 	// margin between icons
-	static int margin = (screenWidth - (iconSize * filesPerRow)) / (filesPerRow + 1);
+	static int margin = (screenWidth - (iconSize * filesPerRow))
+			/ (filesPerRow + 1);
 	// used for dragging
 	int mouseDiffX;
 	int mouseDiffY;
 	boolean isDragging = false;
-	String dragSource = ""; // = desktop | projector
+	String dragSource = ""; // desktop | projector
 
 	// pulldown area -----------------------------------------------------------
 	PImage pulldown;
@@ -81,10 +86,10 @@ public class ShareLight extends PApplet {
 		size(screenWidth, screenHeight);
 		bg = loadImage(bgPath);
 		shadow = loadImage(shadowPath);
+		dropSpace = loadImage(dropSpacePath);
 		println(bgPath);
 
-		dropSpace = loadImage(dropSpacePath);
-
+		// set owner values
 		me.id = 1; // temporarily set to 1 #todo
 		me.mode = 0; // temporarily set to desktop mode #todo
 		// get files from the server
@@ -110,6 +115,15 @@ public class ShareLight extends PApplet {
 		// update time; get from server every second
 		if (millis() - lastTime > updateInterval) {
 			server.getAllFiles();
+			// gets next tentative file if we don't have one
+			if (tentativeFile == null) {
+				server.getTentativeFile(me.id);
+				if (tentativeFile != null) {
+					// if we have a tentative file, tell popup
+					popup.getFileRequest(tentativeFile,
+									tentativeFile.owner.id);
+				}
+			}
 			lastTime = millis();
 		}
 		display();
@@ -138,12 +152,21 @@ public class ShareLight extends PApplet {
 			newFile.initDisplay(-500, -500, iconSize, margin);
 			sharedFiles.add(newFile);
 		}
-		
+
 	}
 
 	void display() {
-		// draw base icons
-		// only draw owner's files
+		// draw layers
+		drawFileList();
+		drawPullDown();
+		setSharedFiles();
+		drawSharedFiles();
+		drawDraggedFile();
+		drawPopUp();
+	}
+
+	void drawFileList() {
+		// draw owner's files from fileList
 		for (int i = 0; i < fileList.size(); i++) {
 			File current = ((File) fileList.get(i));
 			if (current.owner.id != me.id)
@@ -154,7 +177,9 @@ public class ShareLight extends PApplet {
 			current.y = currentY + (pdY - pdYReset);
 			current.display(current.x, current.y);
 		}
+	}
 
+	void drawPullDown() {
 		// draw pulldown menu on top of icons
 		image(pulldown, 0, pdY);
 		if (pdY - pdYReset >= buffer) {
@@ -162,7 +187,9 @@ public class ShareLight extends PApplet {
 		} else {
 			pdActivated = false;
 		}
+	}
 
+	void setSharedFiles() {
 		// set sharedFiles from fileList
 		// draw files that are shared whether user owns them or not
 		for (int i = 0; i < fileList.size(); i++) {
@@ -176,6 +203,9 @@ public class ShareLight extends PApplet {
 				sharedFiles.set(current.projectedLocation, newFile);
 			}
 		}
+	}
+
+	void drawSharedFiles() {
 		// draw shared icons
 		// println("shared: "); // debug
 		for (int i = 0; i < sharedFiles.size(); i++) {
@@ -191,13 +221,19 @@ public class ShareLight extends PApplet {
 			// println(tempFile.name + " " + tempFile.isProjected + " "); //
 			// debug
 		}
+	}
 
+	void drawDraggedFile() {
 		// draw dragged file on top of everything
 		if (isDragging) {
-			tint(255,255,255,200);
+			tint(255, 255, 255, 200);
 			draggedFile.display(mouseX - mouseDiffX, mouseY - mouseDiffY);
-			tint(255,255,255,255);
+			tint(255, 255, 255, 255);
 		}
+	}
+
+	void drawPopUp() {
+		popup.display();
 	}
 
 	/*--------------------------------------------------------------------------
@@ -206,12 +242,16 @@ public class ShareLight extends PApplet {
 
 	// called once
 	public void mousePressed() {
+		// check the state of the popup. If has, then disable other presses
+		if (popup.state != null) {
+			return;
+		}
+
 		// is it pressing on an icon and not on the pulldown?
 		for (int i = 0; i < fileList.size(); i++) {
 			File current = (File) fileList.get(i);
 			if (mouseX > current.x && mouseX < current.x + iconSize
-					&& mouseY > current.y
-					&& mouseY < current.y + iconSize
+					&& mouseY > current.y && mouseY < current.y + iconSize
 					&& mouseY > pdY + pdHeight) {
 				dragSource = "desktop";
 				current.isPressed = true;
@@ -230,8 +270,7 @@ public class ShareLight extends PApplet {
 		for (int i = 0; i < sharedFiles.size(); i++) {
 			File current = (File) sharedFiles.get(i);
 			if (mouseX > current.x && mouseX < current.x + iconSize
-					&& mouseY > current.y 
-					&& mouseY < current.y + iconSize 
+					&& mouseY > current.y && mouseY < current.y + iconSize
 					&& mouseY < pdY + pdHeight) {
 				// don't do anything when pressing on an empty file
 				if (!(current.name).equals("")) {
@@ -242,8 +281,9 @@ public class ShareLight extends PApplet {
 					// initialize dragged icon
 					draggedFile = current;
 					// draggedFile = new File(this, current.name, current.type);
-					// draggedFile.initDisplay(mouseX - mouseDiffX, mouseY - mouseDiffY, iconSize, margin);
-					
+					// draggedFile.initDisplay(mouseX - mouseDiffX, mouseY -
+					// mouseDiffY, iconSize, margin);
+
 				}
 			} else {
 				current.isPressed = false;
@@ -252,6 +292,10 @@ public class ShareLight extends PApplet {
 
 		// is it pressing on the pulldown tab?
 		if (mouseY > (pdY - pdYReset) && mouseY < (pdY + pdHeight)) {
+			if (!pdActivated)
+				pdY = pdYReset + iconSize + buffer + margin;
+			else
+				pdY = pdYReset;
 			pdPressed = true;
 		} else {
 			pdPressed = false;
@@ -259,7 +303,14 @@ public class ShareLight extends PApplet {
 
 	}
 
+	// -------------------------------------------------------------------------
+
 	public void mouseDragged() {
+		if (popup.state != null) {
+			isDragging = false;
+			return;
+		}
+		
 		// dragging icons
 		for (int i = 0; i < fileList.size(); i++) {
 			File current = ((File) fileList.get(i));
@@ -294,10 +345,16 @@ public class ShareLight extends PApplet {
 		}
 	}
 
+	// -------------------------------------------------------------------------
+
 	public void mouseReleased() {
+		// check the state of the popup. If has, then disable other presses
+		if (popup.state != null) {
+			popup.mouseReleased();
+			return;
+		}
 
 		if (isDragging) {
-
 			if (dragSource.equals("desktop")) {
 				// dragging onto projected space
 				if (mouseY < pdY - pdYReset) {
@@ -363,7 +420,8 @@ public class ShareLight extends PApplet {
 								// if swapping with a dropspace
 								File dropSpace = new File(this, emptyFile.name,
 										emptyFile.type);
-								dropSpace.initDisplay(-500, -500, iconSize, margin);
+								dropSpace.initDisplay(-500, -500, iconSize,
+										margin);
 								sharedFiles.set(oldLoc, dropSpace);
 								// account for index starting at 0
 							}
@@ -389,15 +447,15 @@ public class ShareLight extends PApplet {
 							hasFile = true;
 						}
 					}
-					// if the dragged file is not on the desktop, i.e. requesting file
+					// if the dragged file is not on the desktop, i.e.
+					// requesting file
 					if (!hasFile) {
 						// set the tentative to current owner
-						server.setFile(draggedFile.id, "tentative="+me.id);
+						server.setFile(draggedFile.id, "tentative=" + me.id);
 					}
 				}
 			}
 		}
-
 		// set all locked booleans to false
 		isDragging = false;
 	}

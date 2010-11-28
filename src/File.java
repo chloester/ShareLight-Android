@@ -1,7 +1,7 @@
 import processing.core.*;
 
 public class File {
-	PApplet parent;
+	PApplet p;
 	String prePath = "img/";
 	String sharedImgPath = prePath + "shared.png";
 	// properties: server
@@ -22,13 +22,14 @@ public class File {
 	int y;
 	int iconSize;
 	int margin;
+	int buffer = 3;
 	// shared icon variables
 	PImage sharedIcon;
 	int sharedInitLoc = -500;
 	int sharedIconSize;
 
-	File(PApplet p, String fileName, String fileType) {
-		parent = p;
+	File(PApplet parent, String fileName, String fileType) {
+		p = parent;
 		name = fileName;
 		type = fileType;
 		path = getPath(type);
@@ -51,57 +52,55 @@ public class File {
 
 		// load image
 		// lines cannot be separated
-		icon = parent.loadImage(path);
-		parent.image(icon, x, y, s, s);
+		icon = p.loadImage(path);
+		p.image(icon, x, y, s, s);
 
 		if (!name.equals("")) {
 			// load text bg
-			parent.fill(0, 150);
-			parent.rect(x, y + s, s, m);
+			p.fill(0, 150);
+			p.rect(x, y + s, s, m);
 
 			// load text
 			PFont font;
-			font = parent.loadFont(prePath + "SansSerif-18.vlw"); // must be vlw
-			// format,
-			// prefixed
-			// size
-			parent.textFont(font);
-			parent.fill(255);
-			parent.noStroke();
-			parent.text(name, x, y + s, s, m);
+			// must be vlw format, prefixed size
+			font = p.loadFont(prePath + "SansSerif-18.vlw"); 
+			p.textFont(font);
+			p.fill(255);
+			p.noStroke();
+			p.text(name, x, y + s, s, m);
 		}
 
 		// init shared icon, invisible at start
-		sharedIcon = parent.loadImage(sharedImgPath);
-		// parent.image(sharedIcon, sharedInitLoc, sharedInitLoc);
+		sharedIcon = p.loadImage(sharedImgPath);
+		// p.image(sharedIcon, sharedInitLoc, sharedInitLoc);
 		hasInited = true;
 	}
 
 	void display(int x, int y) {
-		parent.image(icon, x, y, iconSize, iconSize);
+		p.image(icon, x, y, iconSize, iconSize);
 		this.x = x;
 		this.y = y;
 
 		// add text if it's not an empty file
 		if (!name.equals("")) {
 			// load text bg
-			parent.fill(0, 150);
-			parent.rect(x, y + iconSize, iconSize, margin);
+			p.fill(0, 150);
+			p.rect(x, y + iconSize, iconSize, margin);
 
 			// text
-			parent.fill(255);
-			parent.noStroke();
+			p.fill(255);
+			p.noStroke();
 			// give text a buffer
-			parent.text(name + "." + type, x + 3, y + iconSize + 3, iconSize,
-					margin); // +3
+			p.text(name + "." + type, x + buffer, y + iconSize + buffer,
+					iconSize, margin);
 		}
 
 		// if file is projected, add icon
 		if (projectedLocation > -1) {
-			parent.image(sharedIcon, x + iconSize - sharedIconSize, y + iconSize 
+			p.image(sharedIcon, x + iconSize - sharedIconSize, y + iconSize 
 					- sharedIconSize, sharedIconSize, sharedIconSize);
 		} else {
-			parent.image(sharedIcon, sharedInitLoc, sharedInitLoc);
+			p.image(sharedIcon, sharedInitLoc, sharedInitLoc);
 		}
 	}
 
