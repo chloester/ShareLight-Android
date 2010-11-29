@@ -119,14 +119,14 @@ public class Server {
 
 	int getMode(int owner) {
 		// gets mode for owner id
-		String get[] = p.loadStrings(url + "getMode.py?id=" + owner);
+		String get[] = p.loadStrings(url + "getMode.py?owner=" + owner);
 		// p.println("Owner " + owner + " mode is " + get[0]); // debug
 		return Integer.parseInt(get[0]);
 	}
 
 	void setMode(int owner, int mode) {
-		String set[] = p.loadStrings(url + "setMode.py?id=" + owner + "&"
-				+ "mode=" + mode);
+		String set[] = p.loadStrings(url + "setMode.py?owner=" + owner
+				+ "&mode=" + mode);
 		// p.println("Setting owner " + owner + " mode to " + mode); // debug
 	}
 

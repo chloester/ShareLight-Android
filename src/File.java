@@ -4,6 +4,7 @@ public class File {
 	PApplet p;
 	String prePath = "img/";
 	String sharedImgPath = prePath + "shared.png";
+	PFont font;
 	// properties: server
 	int id;
 	String name;
@@ -61,7 +62,6 @@ public class File {
 			p.rect(x, y + s, s, m);
 
 			// load text
-			PFont font;
 			// must be vlw format, prefixed size
 			font = p.loadFont(prePath + "SansSerif-18.vlw"); 
 			p.textFont(font);
@@ -88,6 +88,7 @@ public class File {
 			p.rect(x, y + iconSize, iconSize, margin);
 
 			// text
+			p.textFont(font);
 			p.fill(255);
 			p.noStroke();
 			// give text a buffer

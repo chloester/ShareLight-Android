@@ -11,6 +11,7 @@
 
 import java.util.ArrayList;
 import processing.core.PApplet;
+import processing.core.PFont;
 import processing.core.PImage;
 
 public class ShareLight extends PApplet {
@@ -18,20 +19,11 @@ public class ShareLight extends PApplet {
 	/*--------------------------------------------------------------------------
 	 S E T T I N G   U P
 	 --------------------------------------------------------------------------*/
-
+	static ShareLight sharedInstance;
+	
 	// setting up timer --------------------------------------------------------
 	float lastTime = 0;
 	int updateInterval = 1000;
-
-	// setting up images -------------------------------------------------------
-	String path = "img/";
-	String bgPath = path + "bg_wood_800.jpg"; // metal, paper, pattern, wood,
-												// mesh
-	String shadowPath = path + "shadow.png"; // to give nice look to background
-	String dropSpacePath = path + "dropspace.png";
-	PImage bg;
-	PImage shadow;
-	PImage dropSpace;
 
 	// declare files & icon locations ------------------------------------------
 	File emptyFile = new File(this, "", "dropspace");
@@ -62,6 +54,25 @@ public class ShareLight extends PApplet {
 	int mouseDiffY;
 	boolean isDragging = false;
 	String dragSource = ""; // desktop | projector
+	
+	// setting up images -------------------------------------------------------
+	String path = "img/";
+	String bgPath = path + "bg_wood_800.jpg"; // metal, paper, pattern, wood, mesh
+	String shadowPath = path + "shadow.png"; // to give nice look to background
+	String dropSpacePath = path + "dropspace.png";
+	String switchLPath = path + "switch-left.png";
+	String switchRPath = path + "switch-right.png";
+	PImage bg;
+	PImage shadow;
+	PImage dropSpace;
+	PImage switchL;
+	PImage switchR;
+	int switchW = 128;
+	int switchH = 144;
+	int switchX = screenWidth/2-switchW/2;
+	int switchY = screenHeight-switchH-margin;
+	// mode font
+	PFont modeFont;
 
 	// pulldown area -----------------------------------------------------------
 	PImage pulldown;
@@ -82,6 +93,7 @@ public class ShareLight extends PApplet {
 	}
 
 	public void setup() {
+		sharedInstance = this;
 		frameRate(30);
 		size(screenWidth, screenHeight);
 		bg = loadImage(bgPath);
@@ -91,7 +103,8 @@ public class ShareLight extends PApplet {
 
 		// set owner values
 		me.id = 1; // temporarily set to 1 #todo
-		me.mode = 0; // temporarily set to desktop mode #todo
+		me.mode = 0; // initialize to desktop mode
+		server.setMode(me.id, me.mode);
 		// get files from the server
 		server.getAllFiles();
 		// load fileList into grid
@@ -101,6 +114,13 @@ public class ShareLight extends PApplet {
 		pulldown = loadImage(path + "pulldown.png");
 		// initial pulldown height will be at the top
 		pdY = pdYReset;
+		
+		// init switch
+		switchL = loadImage(switchLPath);
+		switchR = loadImage(switchRPath);
+		
+		// set up mode font
+		modeFont = loadFont(path + "SansSerif-32.vlw"); 
 
 		println("Displaying " + fileList.size() + " files"); // debug
 	}
@@ -161,6 +181,7 @@ public class ShareLight extends PApplet {
 		drawPullDown();
 		setSharedFiles();
 		drawSharedFiles();
+		drawSwitch();
 		drawDraggedFile();
 		drawPopUp();
 	}
@@ -221,6 +242,28 @@ public class ShareLight extends PApplet {
 			// println(tempFile.name + " " + tempFile.isProjected + " "); //
 			// debug
 		}
+	}
+	
+	void drawSwitch() {
+		// draw switch
+		PImage img = switchL; // set to left switch by default
+		if (me.mode == 0) {
+			// desktop mode: draw left switch
+			img = switchL;
+		} else if (me.mode == 1) {
+			// avatar mode: draw right switch
+			img = switchR;
+		}
+		image(img, switchX, switchY, switchW, switchH);
+		
+		// draw text
+		textFont(modeFont);
+		fill(0);
+		noStroke();
+		textAlign(RIGHT);
+		text("Desktop", switchX-margin, switchY+switchH/2);
+		textAlign(LEFT);
+		text("Avatar", switchX+switchW+margin, switchY+switchH/2);
 	}
 
 	void drawDraggedFile() {
@@ -299,6 +342,17 @@ public class ShareLight extends PApplet {
 			pdPressed = true;
 		} else {
 			pdPressed = false;
+		}
+
+		// is it pressing on the switch?
+		if (touchedRect(switchX, switchY, switchW, switchH)) {
+			if (me.mode == 0) {
+				me.mode = 1;
+			} else if (me.mode == 1) {
+				me.mode = 0;
+			}
+			drawSwitch();
+			server.setMode(me.id, me.mode);
 		}
 
 	}
@@ -458,5 +512,16 @@ public class ShareLight extends PApplet {
 		}
 		// set all locked booleans to false
 		isDragging = false;
+	}
+	
+	// -------------------------------------------------------------------------
+	
+	static boolean touchedRect(int x, int y, int w, int h) {
+		boolean b;
+		if (sharedInstance.mouseX > x && sharedInstance.mouseX < x+w && sharedInstance.mouseY > y && sharedInstance.mouseY < y+h)
+			b = true;
+		else
+			b = false;
+		return b;
 	}
 }
