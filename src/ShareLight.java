@@ -10,6 +10,7 @@
  */
 
 import java.util.ArrayList;
+
 import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PImage;
@@ -121,6 +122,10 @@ public class ShareLight extends PApplet {
 		
 		// set up mode font
 		modeFont = loadFont(path + "SansSerif-32.vlw"); 
+		
+		// thread
+		Thread thread1 = new Thread(new RunnableThread(this, server, popup), "thread1");
+		thread1.start();
 
 		println("Displaying " + fileList.size() + " files"); // debug
 	}
@@ -132,20 +137,6 @@ public class ShareLight extends PApplet {
 	public void draw() {
 		background(bg);
 		image(shadow, 0, 0);
-		// update time; get from server every second
-		if (millis() - lastTime > updateInterval) {
-			server.getAllFiles();
-			// gets next tentative file if we don't have one
-			if (tentativeFile == null) {
-				server.getTentativeFile(me.id);
-				if (tentativeFile != null) {
-					// if we have a tentative file, tell popup
-					popup.getFileRequest(tentativeFile,
-									tentativeFile.owner.id);
-				}
-			}
-			lastTime = millis();
-		}
 		display();
 		smooth();
 	}
@@ -217,6 +208,7 @@ public class ShareLight extends PApplet {
 			File current = ((File) fileList.get(i));
 			if (current.projectedLocation >= 0) {
 				File newFile = new File(this, current.name, current.type);
+				newFile.id = current.id;
 				newFile.projectedLocation = current.projectedLocation;
 				// #todo change to prevent repeat inits (increase speed)
 				// might need to compare current sharedFiles with last updated
@@ -302,8 +294,10 @@ public class ShareLight extends PApplet {
 				mouseDiffY = mouseY - current.y;
 				// initialize dragged icon
 				draggedFile = new File(this, current.name, current.type);
-				draggedFile.initDisplay(mouseX - mouseDiffX, mouseY
-						- mouseDiffY, iconSize, margin);
+				draggedFile.id = current.id;
+				draggedFile.initDisplay(mouseX - mouseDiffX, mouseY - mouseDiffY, iconSize, margin);
+				println("File dragged to projector is " + draggedFile.id);
+				//draggedFile = current;
 			} else {
 				current.isPressed = false;
 			}
@@ -323,6 +317,7 @@ public class ShareLight extends PApplet {
 					mouseDiffY = mouseY - current.y;
 					// initialize dragged icon
 					draggedFile = current;
+					println("File ID of dragged file is " + draggedFile.id);
 					// draggedFile = new File(this, current.name, current.type);
 					// draggedFile.initDisplay(mouseX - mouseDiffX, mouseY -
 					// mouseDiffY, iconSize, margin);
@@ -354,7 +349,6 @@ public class ShareLight extends PApplet {
 			drawSwitch();
 			server.setMode(me.id, me.mode);
 		}
-
 	}
 
 	// -------------------------------------------------------------------------
@@ -415,8 +409,8 @@ public class ShareLight extends PApplet {
 					for (int i = 0; i < sharedFiles.size(); i++) {
 						// save old file to change its status later
 						File currentFile = (File) sharedFiles.get(i);
-						String oldName = currentFile.name;
-						String newName = draggedFile.name;
+						int oldID = currentFile.id;
+						int newID = draggedFile.id;
 						// if hovering over a dropspace
 						if (mouseX > currentFile.x
 								&& mouseX < currentFile.x + iconSize
@@ -427,11 +421,11 @@ public class ShareLight extends PApplet {
 								File current = ((File) fileList.get(j));
 								// set the new file to shared & projected
 								// set old file to unprojected
-								if (current.name == newName) {
+								if (current.id == newID) {
 									current.projectedLocation = i;
 									server.setStatus(current.id,
 											current.projectedLocation);
-								} else if (current.name == oldName) {
+								} else if (current.id == oldID) {
 									current.projectedLocation = -1;
 									server.setStatus(current.id,
 											current.projectedLocation);
@@ -447,8 +441,8 @@ public class ShareLight extends PApplet {
 					for (int i = 0; i < sharedFiles.size(); i++) {
 						// save old file to change its status later
 						File currentFile = (File) sharedFiles.get(i);
-						String oldName = currentFile.name;
-						String newName = draggedFile.name;
+						int oldID= currentFile.id;
+						int newID = draggedFile.id;
 						// if hovering over a dropspace
 						if (mouseX > currentFile.x
 								&& mouseX < currentFile.x + iconSize
@@ -460,17 +454,17 @@ public class ShareLight extends PApplet {
 							for (int j = 0; j < fileList.size(); j++) {
 								File current = ((File) fileList.get(j));
 								// set new file to old file's location
-								if (current.name == newName) {
+								if (current.id == newID) {
 									current.projectedLocation = i;
 									server.setStatus(current.id,
 											current.projectedLocation);
-								} else if (current.name == oldName) {
+								} else if (current.id == oldID) {
 									current.projectedLocation = oldLoc;
 									server.setStatus(current.id,
 											current.projectedLocation);
 								}
 							}
-							if (oldName.equals("")) {
+							if (currentFile.name.equals("")) {
 								// if swapping with a dropspace
 								File dropSpace = new File(this, emptyFile.name,
 										emptyFile.type);
@@ -483,11 +477,10 @@ public class ShareLight extends PApplet {
 					}
 				} else {
 					// dragging onto desktop
-					String fileName = draggedFile.name;
-					boolean hasFile = false;
+					int fileID = draggedFile.id;
 					for (int i = 0; i < fileList.size(); i++) {
 						File current = ((File) fileList.get(i));
-						if (current.name == fileName) {
+						if (current.id == fileID) {
 							// change the location to not projected
 							int prevLoc = current.projectedLocation;
 							current.projectedLocation = -1;
@@ -498,14 +491,7 @@ public class ShareLight extends PApplet {
 									emptyFile.type);
 							dropSpace.initDisplay(-500, -500, iconSize, margin);
 							sharedFiles.set(prevLoc, dropSpace);
-							hasFile = true;
 						}
-					}
-					// if the dragged file is not on the desktop, i.e.
-					// requesting file
-					if (!hasFile) {
-						// set the tentative to current owner
-						server.setFile(draggedFile.id, "tentative=" + me.id);
 					}
 				}
 			}
